@@ -9,7 +9,7 @@ from openprocurement.auctions.core.validation import (
 from openprocurement.auctions.core.interfaces import (
     ICancellationManager
 )
-from openprocurement.auctions.core.utils import opresource
+from openprocurement.auctions.core.utils import opresource, dgf_upload_file
 from openprocurement.auctions.core.views.mixins import (
     AuctionCancellationDocumentResource
 )
@@ -37,9 +37,17 @@ class AuctionCancellationDocumentResource(AuctionCancellationDocumentResource):
         """
         save = None
 
-        applicant = self.request.validated['document']
         manager = self.request.registry.queryMultiAdapter((self.request, self.context), ICancellationManager)
-        document = manager.create(applicant)
+
+        applicant = self.request.validated['document'] if 'data' in self.request.validated else None
+
+        if applicant:
+            document = manager.create(applicant)
+        else:
+            document = dgf_upload_file(self.request)
+            self.context.documents.append(document)
+            manager._is_changed = True
+
         save = manager.save()
 
         if save:

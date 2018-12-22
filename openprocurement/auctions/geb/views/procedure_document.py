@@ -3,6 +3,7 @@ from openprocurement.auctions.core.utils import (
     json_view,
     context_unpack,
     opresource,
+    dgf_upload_file
 )
 from openprocurement.auctions.core.validation import (
     validate_file_upload,
@@ -35,8 +36,15 @@ class AuctionDocumentResource(AuctionDocumentResource):
 
         manager = self.request.registry.queryMultiAdapter((self.request, self.context), IAuctionManager)
 
-        applicant = self.request.validated['document']
-        document = manager.create(applicant)
+        # TODO: add support for old document uploading(not through document service) into manager
+        applicant = self.request.validated['document'] if 'data' in self.request.validated else None
+
+        if applicant:
+            document = manager.create(applicant)
+        else:
+            document = dgf_upload_file(self.request)
+            self.context.documents.append(document)
+            self.context.changed = True
 
         if document:
             save = manager.save()
