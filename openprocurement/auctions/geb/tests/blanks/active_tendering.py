@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
 from copy import deepcopy
+from email.header import Header
+
 from openprocurement.auctions.core.tests.base import (
     test_document_data,
     test_organization
@@ -127,9 +130,30 @@ def auction_document_post_offline(test_case):
     test_case.assertEqual(expected_http_status, response.status)
 
 
+def auction_document_post_without_ds(test_case):
+    response = test_case.app.post(
+        test_case.ENTRYPOINTS['documents'],
+        upload_files=[('file', str(Header(u'укр.doc', 'utf-8')), 'content')]
+    )
+    test_case.assertEqual(response.status, '201 Created')
+    test_case.assertEqual(response.content_type, 'application/json')
+    doc_id = response.json["data"]['id']
+    test_case.assertIn(doc_id, response.headers['Location'])
+    test_case.assertEqual(u'укр.doc', response.json["data"]["title"])
+
+
+def auction_document_put_without_ds(test_case):
+    response = test_case.app.put(
+        test_case.ENTRYPOINTS['document_put'],
+        upload_files=[('file', str(Header(u'eng.doc', 'utf-8')), 'content')]
+    )
+    test_case.assertEqual(response.status, '200 OK')
+    test_case.assertEqual(response.content_type, 'application/json')
+    test_case.assertEqual(u'eng.doc', response.json["data"]["title"])
+
+
 def auction_document_post(test_case):
     expected_http_status = '201 Created'
-    document = deepcopy(test_document_data)
     auction_documents_type = [
         'technicalSpecifications',
         'evaluationCriteria',
@@ -149,15 +173,16 @@ def auction_document_post(test_case):
         'cancellationDetails',
     ]
     init_document = deepcopy(test_document_data)
-    url = test_case.generate_docservice_url(),
-    init_document['url'] = url[0]
+    init_document['url'] = test_case.generate_docservice_url()
+
     for doc_type in auction_documents_type:
         document = deepcopy(init_document)
         document['documentType'] = doc_type
 
         request_data = {'data': document}
-    response = test_case.app.post_json(test_case.ENTRYPOINTS['documents'], request_data)
-    test_case.assertEqual(expected_http_status, response.status)
+
+        response = test_case.app.post_json(test_case.ENTRYPOINTS['documents'], request_data)
+        test_case.assertEqual(expected_http_status, response.status)
 
 
 def auction_auction_get(test_case):
@@ -359,6 +384,28 @@ def bid_add_document_in_pending_status(test_case):
     request_data = {'data': document}
     response = test_case.app.post_json(test_case.ENTRYPOINTS['add_bid_document'], request_data)
     test_case.assertEqual(expected_http_status, response.status)
+
+
+def bid_document_post_without_ds(test_case):
+    response = test_case.app.post(
+        test_case.ENTRYPOINTS['add_bid_document'],
+        upload_files=[('file', str(Header(u'укр.doc', 'utf-8')), 'content')]
+    )
+    test_case.assertEqual(response.status, '201 Created')
+    test_case.assertEqual(response.content_type, 'application/json')
+    doc_id = response.json["data"]['id']
+    test_case.assertIn(doc_id, response.headers['Location'])
+    test_case.assertEqual(u'укр.doc', response.json["data"]["title"])
+
+
+def bid_document_put_without_ds(test_case):
+    response = test_case.app.put(
+        test_case.ENTRYPOINTS['bid_document'],
+        upload_files=[('file', str(Header(u'eng.doc', 'utf-8')), 'content')]
+    )
+    test_case.assertEqual(response.status, '200 OK')
+    test_case.assertEqual(response.content_type, 'application/json')
+    test_case.assertEqual(u'eng.doc', response.json["data"]["title"])
 
 
 def bid_add_document_in_active_status(test_case):

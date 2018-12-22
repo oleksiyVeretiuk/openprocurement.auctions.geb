@@ -42,6 +42,8 @@ from openprocurement.auctions.geb.tests.blanks.active_tendering import (
     auction_change_fields,
     bid_add,
     bid_add_document_in_active_status,
+    bid_document_put_without_ds,
+    bid_document_post_without_ds,
     bid_add_document_in_draft_status,
     bid_add_document_in_pending_status,
     bid_delete_in_active_status,
@@ -62,7 +64,9 @@ from openprocurement.auctions.geb.tests.blanks.active_tendering import (
     bid_pending_get_document,
     bid_active_patch_document,
     bid_active_get_document,
-    get_question
+    get_question,
+    auction_document_post_without_ds,
+    auction_document_put_without_ds
 )
 from openprocurement.auctions.geb.tests.blanks.cancellations import (
     cancellation_make_clean_bids
@@ -100,6 +104,39 @@ class ActiveTenderingTest(BaseWebTest):
         entrypoints['documents'] = '/auctions/{}/documents?acc_token={}'.format(self.auction['data']['id'],
                                                                                 self.auction['access']['token'])
 
+        self.ENTRYPOINTS = entrypoints
+
+
+class ActiveTenderingDocumentWithoutDSTest(BaseWebTest):
+    docservice = False
+    test_auction_document_post_without_ds = snitch(auction_document_post_without_ds)
+    test_auction_document_put_without_ds = snitch(auction_document_put_without_ds)
+
+    def setUp(self):
+        super(ActiveTenderingDocumentWithoutDSTest, self).setUp()
+
+        procedure = ProcedureMachine()
+        procedure.set_db_connector(self.db)
+        procedure.toggle('active.tendering')
+        context = procedure.snapshot(fixture=AUCTION_WITH_DOCUMENTS)
+
+        auction = context['auction']
+        document = context['documents'][0]
+
+        entrypoints = {}
+        entrypoints['documents'] = '/auctions/{}/documents?acc_token={}'.format(auction['data']['id'],
+                                                                                auction['access']['token'])
+
+        entrypoints['document_patch'] = '/auctions/{}/documents/{}?acc_token={}'.format(auction['data']['id'],
+                                                                                        document['data']['id'],
+                                                                                        auction['access']['token'])
+
+        entrypoints['document_get'] = '/auctions/{}/documents/{}'.format(auction['data']['id'],
+                                                                         document['data']['id'])
+        entrypoints['document_put'] = entrypoints['document_patch']
+
+        self.document = document
+        self.auction = auction
         self.ENTRYPOINTS = entrypoints
 
 
@@ -214,6 +251,7 @@ class ActiveTenderingActiveBidsTest(BaseWebTest):
 
     test_bid_patch_in_active_status = snitch(bid_patch_in_active_status)
     test_bid_add_document_in_active_status = snitch(bid_add_document_in_active_status)
+    test_bid_document_post_without_ds = snitch(bid_document_post_without_ds)
     test_bid_delete_in_active_status = snitch(bid_delete_in_active_status)
     test_bid_get_in_active_status = snitch(bid_get_in_active_status)
     test_bid_patch_in_active_status = snitch(bid_patch_in_active_status)
@@ -249,6 +287,7 @@ class ActiveTenderingDraftBidsWithDocumentTest(BaseWebTest):
 
     test_bid_get_document_in_active_status = snitch(bid_draft_get_document)
     test_bid_patch_document_in_active_status = snitch(bid_draft_patch_document)
+    test_bid_document_put_without_ds = snitch(bid_document_put_without_ds)
 
     def setUp(self):
         super(ActiveTenderingDraftBidsWithDocumentTest, self).setUp()
@@ -276,6 +315,7 @@ class ActiveTenderingPendingBidsWithDocumentTest(BaseWebTest):
 
     test_bid_get_document_in_active_status = snitch(bid_pending_get_document)
     test_bid_patch_document_in_active_status = snitch(bid_pending_patch_document)
+    test_bid_document_put_without_ds = snitch(bid_document_put_without_ds)
 
     def setUp(self):
         super(ActiveTenderingPendingBidsWithDocumentTest, self).setUp()
@@ -486,6 +526,7 @@ def suite():
     suite.addTest(unittest.makeSuite(ActiveTenderingPendingBidsWithDocumentTest))
     suite.addTest(unittest.makeSuite(ActiveTenderingQuestionsTest))
     suite.addTest(unittest.makeSuite(ActiveTenderingTest))
+    suite.addTest(unittest.makeSuite(ActiveTenderingDocumentWithoutDSTest))
     suite.addTest(unittest.makeSuite(ActiveTenderingWithBidsCancellationsTest))
     return suite
 
