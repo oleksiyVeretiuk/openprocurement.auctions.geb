@@ -114,6 +114,13 @@ class EndActiveEnquiryAction(BaseAction):
         bids = self.context.bids
         active_bids = [bid for bid in bids if bid.status == 'active']
 
+        # in the end of enquiry period
+        # all bids that are in status 'draft/pending'
+        # switch to 'unsuccessful' status
+        for bid in self.context['bids']:
+            if bid.status in ['draft', 'pending']:
+                bid.status = 'unsuccessful'
+
         if min_number == 1:
             if len(active_bids) == 0:
                 status = 'unsuccessful'
@@ -133,13 +140,6 @@ class EndActiveEnquiryAction(BaseAction):
                 status = 'unsuccessful'
             elif len(active_bids) >= 2:
                 status = 'active.auction'
-
-        # in the end of enquiry period
-        # all bids that are in status 'draft/pending'
-        # switch to 'unsuccessful' status
-        for bid in self.context['bids']:
-            if bid.status in ['draft', 'pending']:
-                bid.status = 'unsuccessful'
 
         self.context.status = status
         log_auction_status_change(self.request, self.context, self.context.status)
